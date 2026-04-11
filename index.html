@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Generador de Fotos Carnet | 5 copias para imprimir en A4</title>
-    <!-- Librería Cropper.js -->
     <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.js"></script>
     <style>
@@ -191,25 +190,61 @@
             color: #6c86a3;
             margin-top: 30px;
         }
+
+        /* ========== ESTILOS DE IMPRESIÓN CORREGIDOS ========== */
         @media print {
-            body * { visibility: hidden; }
-            #printSection, #printSection * { visibility: visible; }
+            /* Eliminar todo el contenido de la pantalla */
+            body * {
+                visibility: hidden;
+                display: none;
+            }
+            /* Solo mostrar la sección de impresión */
+            #printSection, #printSection * {
+                visibility: visible;
+                display: block;
+            }
             #printSection {
-                position: absolute;
+                position: fixed;
                 top: 0;
                 left: 0;
                 width: 100%;
+                height: 100%;
                 margin: 0;
                 padding: 0;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                min-height: 100vh;
+                background: white;
             }
-            .carnet-strip { box-shadow: none; padding: 0; margin: 0 auto; }
-            @page { size: A4; margin: 1.2cm; }
-            .no-print, .btn-group, .panel-crop, .panel-info, .sub, h1, footer, .strip-title, .warning-msg, .ajustar-panel {
-                display: none;
+            /* La tira de fotos */
+            .print-strip {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                justify-content: center !important;
+                align-items: center !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                gap: 0 !important;
+                background: white !important;
+            }
+            .print-strip img {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            /* Configurar márgenes de la hoja: 1cm superior, inferior, izquierdo, derecho */
+            @page {
+                size: A4;
+                margin: 1cm 1cm 1cm 1cm;
+            }
+            /* Eliminar cualquier encabezado o pie de página automático del navegador */
+            html, body {
+                margin: 0;
+                padding: 0;
+                background: white;
             }
         }
     </style>
@@ -337,7 +372,6 @@
         imgElement.src = '';
     }
 
-    // Función principal: cargar archivo y crear cropper SOLO cuando la imagen está lista
     function loadAndCrop(file) {
         if (!file) return;
         if (!file.type.startsWith('image/')) {
@@ -352,10 +386,8 @@
         imgElement.src = url;
         imgElement.style.display = 'block';
 
-        // Esperar a que la imagen esté completamente cargada
         imgElement.onload = () => {
             setStatus(`Imagen cargada: ${imgElement.naturalWidth} x ${imgElement.naturalHeight} px. Ajusta el recorte.`);
-            // Ahora inicializar Cropper
             if (cropper) cropper.destroy();
             try {
                 const aspect = targetWidthCm / targetHeightCm;
@@ -479,20 +511,39 @@
         setStatus('Todo reiniciado. Puedes subir una nueva foto.');
     }
 
+    // Función de impresión mejorada
     function printStrip() {
         const strip = document.getElementById('carnetStrip');
         if (!strip.children.length || strip.children[0].tagName !== 'IMG') {
             setStatus('No hay fotos generadas. Primero haz clic en "Generar 5 copias".', true);
             return;
         }
-        const clone = strip.cloneNode(true);
-        clone.style.display = 'flex';
-        clone.style.justifyContent = 'center';
-        const printDiv = document.getElementById('printSection');
-        printDiv.innerHTML = '';
-        printDiv.appendChild(clone);
+
+        // Clonar la tira y sus imágenes
+        const cloneStrip = strip.cloneNode(true);
+        // Añadir una clase especial para impresión
+        cloneStrip.classList.add('print-strip');
+        // Eliminar estilos inline que puedan interferir (pero conservar width/height)
+        cloneStrip.style.cssText = 'display: flex !important; flex-direction: row !important; justify-content: center !important; align-items: center !important; margin: 0 auto !important; padding: 0 !important; gap: 0 !important; background: white !important;';
+        
+        // Asegurar que cada imagen mantenga sus dimensiones en cm
+        const images = cloneStrip.querySelectorAll('img');
+        images.forEach(img => {
+            img.style.cssText = `display: block !important; width: ${targetWidthCm}cm !important; height: ${targetHeightCm}cm !important; margin: 0 !important; padding: 0 !important; border: none !important; box-shadow: none !important;`;
+        });
+
+        // Preparar el contenedor de impresión
+        const printSection = document.getElementById('printSection');
+        printSection.innerHTML = '';
+        printSection.appendChild(cloneStrip);
+
+        // Forzar la impresión con los márgenes configurados en CSS
         window.print();
-        setTimeout(() => { printDiv.innerHTML = ''; }, 500);
+        
+        // Limpiar después de imprimir (opcional)
+        setTimeout(() => {
+            printSection.innerHTML = '';
+        }, 100);
     }
 
     // Eventos
