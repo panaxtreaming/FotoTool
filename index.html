@@ -2,738 +2,96 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Generador de Fotos Carnet | 5 copias para imprimir en A4</title>
-    <!-- Librería Cropper.js para recortar imágenes -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de carga de imagen - Diagnóstico</title>
     <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-            color: #1e2a3e;
-        }
-
-        .container {
-            max-width: 1300px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 32px;
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.15);
-            padding: 24px 28px;
-            transition: all 0.2s;
-        }
-
-        h1 {
-            font-size: 1.8rem;
-            margin-top: 0;
-            margin-bottom: 0.25rem;
-            color: #0a5b7c;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        h1 small {
-            font-size: 0.8rem;
-            font-weight: normal;
-            background: #eef2ff;
-            padding: 4px 12px;
-            border-radius: 40px;
-            color: #0c4e6e;
-        }
-
-        .sub {
-            color: #4a627a;
-            border-left: 4px solid #2c9cd4;
-            padding-left: 16px;
-            margin: 15px 0 25px 0;
-            font-weight: 400;
-        }
-
-        .grid-2col {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 30px;
-            margin-bottom: 35px;
-        }
-
-        .panel-crop {
-            flex: 1.2;
-            min-width: 280px;
-        }
-
-        .panel-info {
-            flex: 0.9;
-            min-width: 240px;
-            background: #f8fafc;
-            border-radius: 24px;
-            padding: 18px 20px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        }
-
-        .img-preview-area {
-            background: #eef2f5;
-            border-radius: 20px;
-            padding: 12px;
-            margin-bottom: 20px;
-        }
-
-        #imageCropper {
-            max-width: 100%;
-            background: #e2e8f0;
-            border-radius: 16px;
-            display: block;
-        }
-
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin: 20px 0 10px;
-        }
-
-        button {
-            background: #2c9cd4;
-            border: none;
-            color: white;
-            font-weight: 600;
-            padding: 10px 18px;
-            border-radius: 60px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: 0.2s;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        button i {
-            font-style: normal;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        button:hover {
-            background: #1f7ca8;
-            transform: scale(0.98);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-
-        .btn-secondary {
-            background: #5b6e8c;
-        }
-        .btn-secondary:hover {
-            background: #3f4e66;
-        }
-        .btn-success {
-            background: #2b7a4b;
-        }
-        .btn-success:hover {
-            background: #1f5e3a;
-        }
-        .btn-warning {
-            background: #d97706;
-        }
-
-        .dimension-card {
-            background: white;
-            border-radius: 20px;
-            padding: 10px 16px;
-            margin: 20px 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            border: 1px solid #e2edf2;
-        }
-
-        .current-size {
-            background: #e6f7ff;
-            border-radius: 16px;
-            padding: 12px;
-            text-align: center;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .size-badge {
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: #0c4e6e;
-        }
-
-        .ajustar-panel {
-            background: #ffffffdd;
-            backdrop-filter: blur(4px);
-            border-radius: 20px;
-            padding: 15px;
-            margin-top: 12px;
-            border: 1px solid #cbdde6;
-        }
-
-        .input-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: flex-end;
-        }
-
-        .input-campo {
-            flex: 1;
-        }
-        .input-campo label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: #1e3a5f;
-        }
-        .input-campo input {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 16px;
-            border: 1px solid #cbd5e1;
-            font-size: 1rem;
-        }
-
-        .strip-container {
-            margin-top: 30px;
-            border-top: 2px dashed #b9d0e0;
-            padding-top: 20px;
-        }
-
-        .strip-title {
-            font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-
-        .carnet-strip {
-            display: flex;
-            flex-direction: row;
-            flex-wrap: nowrap;
-            justify-content: center;
-            gap: 0px;
-            background: white;
-            padding: 16px 12px;
-            border-radius: 24px;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.1);
-            overflow-x: auto;
-        }
-
-        .carnet-photo {
-            display: block;
-            object-fit: cover;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            background: #fef9e3;
-            transition: 0.1s;
-        }
-
-        .carnet-strip .carnet-photo {
-            margin: 0;
-            border: 1px solid #e9ecef;
-        }
-
-        .print-only-area {
-            display: none;
-        }
-
-        .warning-msg {
-            background: #fff3e0;
-            border-left: 6px solid #f59e0b;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            margin: 15px 0 5px;
-        }
-
-        .status-msg {
-            background: #e6f7ff;
-            border-left: 6px solid #2c9cd4;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            margin: 10px 0;
-        }
-
-        footer {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #6c86a3;
-            margin-top: 30px;
-        }
-
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #printSection, #printSection * {
-                visibility: visible;
-            }
-            #printSection {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
-            }
-            .carnet-strip {
-                box-shadow: none;
-                padding: 0;
-                margin: 0 auto;
-                page-break-after: avoid;
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-            .carnet-photo {
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-            @page {
-                size: A4;
-                margin: 1.2cm;
-            }
-            .no-print, .btn-group, .panel-crop, .panel-info, .sub, h1, footer, .strip-title, .warning-msg, .ajustar-panel, .btn-group {
-                display: none;
-            }
-            .strip-container {
-                border: none;
-                margin-top: 0;
-                padding-top: 0;
-            }
-        }
+        body { font-family: monospace; padding: 20px; max-width: 800px; margin: auto; }
+        #log { background: #f4f4f4; padding: 10px; border-radius: 8px; margin: 20px 0; white-space: pre-wrap; font-size: 12px; max-height: 200px; overflow: auto; }
+        img { max-width: 100%; margin-top: 20px; display: none; }
+        button { margin: 10px 5px; padding: 8px 16px; }
+        .error { color: red; }
+        .success { color: green; }
     </style>
 </head>
 <body>
+    <h2>Diagnóstico: Carga de imagen para recorte</h2>
+    <input type="file" id="fileInput" accept="image/jpeg, image/png, image/jpg">
+    <div id="log">Esperando archivo...</div>
+    <img id="preview">
+    <div id="cropperContainer"></div>
+    <button id="testCropper" style="display:none;">Iniciar Cropper (si la imagen cargó)</button>
 
-<div class="container">
-    <h1>📸 Foto Carnet 5x <small>3cm ancho × 4cm alto</small></h1>
-    <div class="sub">✂️ Sube una foto, recorta el contenido deseado y genera 5 copias idénticas lado a lado. Ideal para impresión en hoja A4.</div>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const logDiv = document.getElementById('log');
+        const previewImg = document.getElementById('preview');
+        const testBtn = document.getElementById('testCropper');
+        let cropper = null;
 
-    <div class="grid-2col">
-        <!-- Área de recorte -->
-        <div class="panel-crop">
-            <div class="img-preview-area">
-                <input type="file" id="uploadImg" accept="image/jpeg, image/png, image/jpg, image/webp, image/bmp">
-                <div id="statusMessage" class="status-msg" style="margin-top: 12px;">✅ Esperando imagen...</div>
-                <div style="position: relative; margin-top: 12px;">
-                    <img id="imageCropper" alt="Foto a recortar" style="max-width:100%; display: none;">
-                </div>
-            </div>
-            <div class="btn-group">
-                <button id="generateBtn" class="btn-success">✨ Generar 5 copias carnet</button>
-                <button id="printBtn" class="btn-primary">🖨️ Imprimir tira</button>
-                <button id="resetBtn" class="btn-secondary">⟳ Reiniciar</button>
-            </div>
-            <div class="warning-msg" id="sizeWarningMsg" style="display: none;">
-                ⚠️ Atención: El ancho total de la tira supera los 21cm (ancho A4). Reduce el ancho de cada foto o ajusta márgenes de impresión.
-            </div>
-        </div>
-
-        <!-- Panel de información y ajuste de proporciones -->
-        <div class="panel-info">
-            <div style="font-weight: bold; margin-bottom: 12px;">📐 Dimensiones de cada foto</div>
-            <div class="current-size">
-                <span>📏 Tamaño actual:</span>
-                <div class="size-badge" id="sizeLabelDisplay">3.0 cm (ancho) × 4.0 cm (alto)</div>
-            </div>
-            <button id="toggleAdjustBtn" class="btn-warning" style="width:100%; margin-bottom: 10px;">⚙️ Ajustar proporciones / tamaño</button>
-            <div id="adjustPanel" style="display: none;" class="ajustar-panel">
-                <div class="input-row">
-                    <div class="input-campo">
-                        <label>📏 Ancho (cm)</label>
-                        <input type="number" id="widthCm" step="0.1" min="1.5" max="5.5" value="3.0">
-                    </div>
-                    <div class="input-campo">
-                        <label>📏 Alto (cm)</label>
-                        <input type="number" id="heightCm" step="0.1" min="2.0" max="7.0" value="4.0">
-                    </div>
-                    <div>
-                        <button id="applySizeBtn" style="margin-top: 20px;">Aplicar</button>
-                    </div>
-                </div>
-                <div style="font-size: 0.7rem; margin-top: 12px; color: #4a5b6e;">* El recorte mantendrá la proporción ancho/alto elegida. Luego se generarán las copias con esas medidas exactas (300 DPI para impresión nítida).</div>
-            </div>
-            <hr style="margin: 15px 0; opacity:0.3;">
-            <div style="font-size: 0.85rem;">
-                <p>✔️ <strong>Instrucciones:</strong><br>
-                1. Sube tu foto (JPG, PNG, etc).<br>
-                2. Espera a que aparezca la imagen y el recuadro.<br>
-                3. Ajusta el rectángulo de recorte sobre la zona que quieras.<br>
-                4. Si lo deseas, cambia el tamaño final usando <strong>"Ajustar proporciones"</strong>.<br>
-                5. Haz clic en "Generar 5 copias carnet".<br>
-                6. Presiona "Imprimir tira" y elige impresión en A4.<br>
-                🔹 Las 5 fotos se generan lado a lado con las dimensiones exactas (cm) para impresión real.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tira de fotos generada -->
-    <div class="strip-container">
-        <div class="strip-title">🖼️ Tira de 5 fotos carnet (lado a lado)</div>
-        <div id="carnetStrip" class="carnet-strip">
-            <div style="color:#aaa; padding:20px; text-align:center; width:100%;">Aún no hay fotos. Sube una imagen y genera las copias.</div>
-        </div>
-    </div>
-    <footer>✅ Las imágenes se renderizan a 300 ppp (píxeles por pulgada) para calidad de impresión. Cada foto mantiene el recorte elegido y se redimensiona a las medidas exactas.</footer>
-</div>
-
-<!-- Sección auxiliar para impresión -->
-<div id="printSection" style="display: none;"></div>
-
-<script>
-    // ---------- VARIABLES GLOBALES ----------
-    let cropper = null;
-    let currentImageFile = null;
-    let currentImageURL = null;
-    
-    // Tamaños objetivo por defecto (cm)
-    let targetWidthCm = 3.0;
-    let targetHeightCm = 4.0;
-    
-    // Resolución para impresión: 300 DPI (píxeles por pulgada)
-    const DPI = 300;
-    function cmToPixels(cm) {
-        return Math.round(cm / 2.54 * DPI);
-    }
-    
-    // Elementos DOM
-    const fileInput = document.getElementById('uploadImg');
-    const imgElement = document.getElementById('imageCropper');
-    const generateBtn = document.getElementById('generateBtn');
-    const printBtn = document.getElementById('printBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const toggleAdjustBtn = document.getElementById('toggleAdjustBtn');
-    const adjustPanel = document.getElementById('adjustPanel');
-    const widthCmInput = document.getElementById('widthCm');
-    const heightCmInput = document.getElementById('heightCm');
-    const applySizeBtn = document.getElementById('applySizeBtn');
-    const sizeLabelDisplay = document.getElementById('sizeLabelDisplay');
-    const carnetStripDiv = document.getElementById('carnetStrip');
-    const sizeWarningMsg = document.getElementById('sizeWarningMsg');
-    const statusMessageDiv = document.getElementById('statusMessage');
-    
-    function setStatus(msg, isError = false) {
-        statusMessageDiv.innerHTML = isError ? `❌ ${msg}` : `✅ ${msg}`;
-        statusMessageDiv.style.background = isError ? '#ffe6e6' : '#e6f7ff';
-        statusMessageDiv.style.borderLeftColor = isError ? '#d9534f' : '#2c9cd4';
-    }
-    
-    // Actualizar etiqueta visual de tamaño
-    function updateSizeLabel() {
-        sizeLabelDisplay.innerText = `${targetWidthCm.toFixed(1)} cm (ancho) × ${targetHeightCm.toFixed(1)} cm (alto)`;
-        const totalWidthCm = targetWidthCm * 5;
-        if (totalWidthCm > 21) {
-            sizeWarningMsg.style.display = 'block';
-            sizeWarningMsg.innerHTML = `⚠️ El ancho total de la tira es ${totalWidthCm.toFixed(1)} cm (supera 21 cm del ancho A4). Puede que la impresión se recorte. Reduce el ancho por foto o ajusta márgenes en impresora.`;
-        } else {
-            sizeWarningMsg.style.display = 'none';
+        function log(msg, isError = false) {
+            const p = document.createElement('div');
+            p.textContent = msg;
+            p.className = isError ? 'error' : 'success';
+            logDiv.appendChild(p);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(msg);
         }
-    }
-    
-    // Destruir cropper anterior y liberar URL
-    function destroyCropper() {
-        if (cropper) {
-            try {
-                cropper.destroy();
-            } catch(e) { console.warn(e); }
-            cropper = null;
-        }
-        if (currentImageURL) {
-            URL.revokeObjectURL(currentImageURL);
-            currentImageURL = null;
-        }
-        imgElement.style.display = 'none';
-        imgElement.src = '';
-    }
-    
-    // Inicializar cropper con la imagen cargada
-    function initCropper(imageSrc) {
-        return new Promise((resolve, reject) => {
-            destroyCropper();
-            imgElement.src = imageSrc;
-            imgElement.style.display = 'block';
-            
-            const onLoad = () => {
-                imgElement.removeEventListener('load', onLoad);
-                imgElement.removeEventListener('error', onError);
-                try {
-                    if (cropper) cropper.destroy();
-                    const aspect = targetWidthCm / targetHeightCm;
-                    cropper = new Cropper(imgElement, {
-                        aspectRatio: aspect,
-                        viewMode: 2,
-                        dragMode: 'crop',
-                        cropBoxMovable: true,
-                        cropBoxResizable: true,
-                        background: true,
-                        autoCropArea: 0.8,
-                        guides: true,
-                        center: true,
-                        highlight: true,
-                    });
-                    setStatus(`Imagen cargada correctamente. Ajusta el recorte.`);
-                    resolve();
-                } catch(err) {
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            log(`📁 Archivo seleccionado: ${file.name}, tipo: ${file.type}, tamaño: ${file.size} bytes`);
+
+            // Verificar si el tipo MIME es válido
+            if (!file.type.startsWith('image/')) {
+                log(`❌ Tipo MIME inválido: ${file.type}. No es una imagen.`, true);
+                return;
+            }
+
+            // Usar FileReader para leer como DataURL (más fiable)
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataURL = e.target.result;
+                log(`✅ Archivo leído como DataURL (longitud: ${dataURL.length})`);
+
+                // Mostrar la imagen en el elemento <img>
+                previewImg.src = dataURL;
+                previewImg.style.display = 'block';
+                previewImg.onload = () => {
+                    log(`🖼️ Imagen cargada correctamente. Dimensiones: ${previewImg.naturalWidth} x ${previewImg.naturalHeight}`);
+                    testBtn.style.display = 'inline-block';
+                };
+                previewImg.onerror = (err) => {
+                    log(`❌ Error al cargar la imagen en el DOM. Posible corrupción.`, true);
                     console.error(err);
-                    reject(new Error('Error al crear el recortador: ' + err.message));
-                }
+                };
             };
-            
-            const onError = () => {
-                imgElement.removeEventListener('load', onLoad);
-                imgElement.removeEventListener('error', onError);
-                reject(new Error('No se pudo cargar la imagen. Formato no soportado o archivo dañado.'));
+            reader.onerror = (err) => {
+                log(`❌ FileReader falló: ${err.target.error}`, true);
             };
-            
-            imgElement.addEventListener('load', onLoad);
-            imgElement.addEventListener('error', onError);
-            
-            // Si la imagen ya está en caché y ya se cargó
-            if (imgElement.complete && imgElement.naturalWidth > 0) {
-                onLoad();
+            reader.readAsDataURL(file);
+        });
+
+        testBtn.addEventListener('click', () => {
+            if (!previewImg.src || !previewImg.naturalWidth) {
+                log('No hay imagen válida para recortar', true);
+                return;
+            }
+            if (cropper) cropper.destroy();
+            try {
+                cropper = new Cropper(previewImg, {
+                    aspectRatio: 3/4,
+                    viewMode: 2,
+                    autoCropArea: 0.8,
+                });
+                log('✅ Cropper inicializado con éxito. Ahora puedes usar "Generar 5 copias" si integras esa parte.');
+            } catch(e) {
+                log(`❌ Error al iniciar Cropper: ${e.message}`, true);
             }
         });
-    }
-    
-    // Cuando se sube una nueva imagen
-    fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        if (!file.type.startsWith('image/')) {
-            setStatus('El archivo no es una imagen válida. Por favor selecciona JPG, PNG, etc.', true);
-            return;
-        }
-        
-        setStatus('Cargando imagen...');
-        currentImageFile = file;
-        
-        // Liberar URL anterior si existe
-        if (currentImageURL) {
-            URL.revokeObjectURL(currentImageURL);
-        }
-        
-        const objectURL = URL.createObjectURL(file);
-        currentImageURL = objectURL;
-        
-        try {
-            await initCropper(objectURL);
-            // Limpiar tira generada anteriormente
-            carnetStripDiv.innerHTML = '<div style="color:#aaa; padding:20px; text-align:center; width:100%;">Foto cargada. Ajusta el recorte y haz clic en "Generar 5 copias".</div>';
-        } catch(err) {
-            setStatus(err.message, true);
-            console.error(err);
-            imgElement.style.display = 'none';
-            if (currentImageURL) {
-                URL.revokeObjectURL(currentImageURL);
-                currentImageURL = null;
-            }
-        }
-    });
-    
-    // Obtener canvas recortado
-    function getCroppedCanvasRaw() {
-        if (!cropper) {
-            setStatus('Primero sube una foto y espera a que se cargue.', true);
-            return null;
-        }
-        try {
-            const croppedCanvas = cropper.getCroppedCanvas();
-            if (!croppedCanvas) {
-                setStatus('No se pudo recortar la imagen. Intenta de nuevo.', true);
-                return null;
-            }
-            return croppedCanvas;
-        } catch(err) {
-            console.error(err);
-            setStatus('Error al recortar: ' + err.message, true);
-            return null;
-        }
-    }
-    
-    function resizeCanvasToExactSize(sourceCanvas, targetWidthPx, targetHeightPx) {
-        const resizedCanvas = document.createElement('canvas');
-        resizedCanvas.width = targetWidthPx;
-        resizedCanvas.height = targetHeightPx;
-        const ctx = resizedCanvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(sourceCanvas, 0, 0, targetWidthPx, targetHeightPx);
-        return resizedCanvas;
-    }
-    
-    // Generar 5 copias
-    function generateFiveCopies() {
-        if (!cropper) {
-            setStatus('No hay ninguna foto cargada. Sube una imagen primero.', true);
-            return;
-        }
-        const croppedCanvas = getCroppedCanvasRaw();
-        if (!croppedCanvas) return;
-        
-        const targetWidthPx = cmToPixels(targetWidthCm);
-        const targetHeightPx = cmToPixels(targetHeightCm);
-        
-        if (targetWidthPx <= 0 || targetHeightPx <= 0) {
-            setStatus('Las dimensiones deben ser mayores a 0 cm.', true);
-            return;
-        }
-        
-        try {
-            const finalImageCanvas = resizeCanvasToExactSize(croppedCanvas, targetWidthPx, targetHeightPx);
-            const imageDataURL = finalImageCanvas.toDataURL('image/png');
-            
-            const fragment = document.createDocumentFragment();
-            for (let i = 0; i < 5; i++) {
-                const img = document.createElement('img');
-                img.src = imageDataURL;
-                img.classList.add('carnet-photo');
-                img.style.width = `${targetWidthCm}cm`;
-                img.style.height = `${targetHeightCm}cm`;
-                img.style.objectFit = 'cover';
-                img.style.display = 'block';
-                fragment.appendChild(img);
-            }
-            
-            carnetStripDiv.innerHTML = '';
-            carnetStripDiv.appendChild(fragment);
-            setStatus(`✅ 5 copias generadas (${targetWidthCm} x ${targetHeightCm} cm cada una).`);
-            
-            const totalStripWidth = targetWidthCm * 5;
-            if (totalStripWidth > 21) {
-                setStatus(`⚠️ El ancho total de la tira es ${totalStripWidth.toFixed(1)} cm, puede que no quepa en A4. Considera reducir el ancho.`, false);
-            }
-        } catch(err) {
-            setStatus('Error al generar las copias: ' + err.message, true);
-        }
-    }
-    
-    function updateCropperAspectRatio() {
-        if (cropper) {
-            const newAspect = targetWidthCm / targetHeightCm;
-            cropper.setAspectRatio(newAspect);
-        }
-    }
-    
-    function applyNewSize() {
-        let newWidth = parseFloat(widthCmInput.value);
-        let newHeight = parseFloat(heightCmInput.value);
-        if (isNaN(newWidth) || isNaN(newHeight) || newWidth <= 0 || newHeight <= 0) {
-            setStatus('Ingresa valores válidos mayores a 0 cm', true);
-            return;
-        }
-        newWidth = Math.min(8, Math.max(1, newWidth));
-        newHeight = Math.min(10, Math.max(1, newHeight));
-        
-        targetWidthCm = newWidth;
-        targetHeightCm = newHeight;
-        
-        widthCmInput.value = targetWidthCm.toFixed(1);
-        heightCmInput.value = targetHeightCm.toFixed(1);
-        
-        updateSizeLabel();
-        updateCropperAspectRatio();
-        
-        if (carnetStripDiv.children.length > 0 && carnetStripDiv.children[0].tagName === 'IMG') {
-            setStatus(`Tamaño actualizado a ${targetWidthCm} x ${targetHeightCm} cm. Debes hacer clic en "Generar 5 copias" para actualizar las fotos.`, false);
-        } else {
-            setStatus(`Tamaño actualizado a ${targetWidthCm} x ${targetHeightCm} cm.`, false);
-        }
-    }
-    
-    function resetAll() {
-        destroyCropper();
-        fileInput.value = '';
-        carnetStripDiv.innerHTML = '<div style="color:#aaa; padding:20px; text-align:center; width:100%;">Aún no hay fotos. Sube una imagen y genera las copias.</div>';
-        targetWidthCm = 3.0;
-        targetHeightCm = 4.0;
-        widthCmInput.value = "3.0";
-        heightCmInput.value = "4.0";
-        updateSizeLabel();
-        adjustPanel.style.display = 'none';
-        toggleAdjustBtn.innerText = '⚙️ Ajustar proporciones / tamaño';
-        setStatus('Todo reiniciado. Puedes subir una nueva foto.');
-    }
-    
-    function printStrip() {
-        const stripContainer = document.getElementById('carnetStrip');
-        if (!stripContainer || stripContainer.children.length === 0 || stripContainer.children[0].tagName !== 'IMG') {
-            setStatus('No hay fotos generadas. Primero genera las 5 copias.', true);
-            return;
-        }
-        
-        const printClone = stripContainer.cloneNode(true);
-        printClone.classList.add('carnet-strip');
-        printClone.style.display = 'flex';
-        printClone.style.flexDirection = 'row';
-        printClone.style.justifyContent = 'center';
-        printClone.style.gap = '0px';
-        printClone.style.margin = '0 auto';
-        printClone.style.padding = '0';
-        printClone.style.backgroundColor = 'white';
-        
-        const images = printClone.querySelectorAll('img');
-        images.forEach(img => {
-            img.style.width = `${targetWidthCm}cm`;
-            img.style.height = `${targetHeightCm}cm`;
-            img.style.display = 'block';
-            img.style.pageBreakInside = 'avoid';
-        });
-        
-        let printSection = document.getElementById('printSection');
-        if (!printSection) {
-            printSection = document.createElement('div');
-            printSection.id = 'printSection';
-            document.body.appendChild(printSection);
-        }
-        printSection.innerHTML = '';
-        const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex';
-        wrapper.style.justifyContent = 'center';
-        wrapper.style.alignItems = 'center';
-        wrapper.style.width = '100%';
-        wrapper.style.margin = '0';
-        wrapper.style.padding = '0';
-        wrapper.appendChild(printClone);
-        printSection.appendChild(wrapper);
-        
-        window.print();
-        
-        setTimeout(() => {
-            printSection.innerHTML = '';
-        }, 500);
-    }
-    
-    // Eventos
-    generateBtn.addEventListener('click', generateFiveCopies);
-    printBtn.addEventListener('click', printStrip);
-    resetBtn.addEventListener('click', resetAll);
-    toggleAdjustBtn.addEventListener('click', () => {
-        if (adjustPanel.style.display === 'none') {
-            adjustPanel.style.display = 'block';
-            toggleAdjustBtn.innerText = '🔽 Ocultar ajustes';
-        } else {
-            adjustPanel.style.display = 'none';
-            toggleAdjustBtn.innerText = '⚙️ Ajustar proporciones / tamaño';
-        }
-    });
-    applySizeBtn.addEventListener('click', applyNewSize);
-    widthCmInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') applyNewSize(); });
-    heightCmInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') applyNewSize(); });
-    
-    updateSizeLabel();
-    setStatus('Listo. Sube una foto JPG o PNG.');
-</script>
+    </script>
 </body>
 </html>
