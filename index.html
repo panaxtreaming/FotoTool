@@ -1,44 +1,512 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Prueba de carga de imagen - Ultra simple</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Generador de Fotos Carnet | 5 copias para imprimir en A4</title>
+    <!-- Librería Cropper.js -->
+    <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #1e2a3e;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.15);
+            padding: 24px 28px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-top: 0;
+            margin-bottom: 0.25rem;
+            color: #0a5b7c;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h1 small {
+            font-size: 0.8rem;
+            font-weight: normal;
+            background: #eef2ff;
+            padding: 4px 12px;
+            border-radius: 40px;
+            color: #0c4e6e;
+        }
+        .sub {
+            color: #4a627a;
+            border-left: 4px solid #2c9cd4;
+            padding-left: 16px;
+            margin: 15px 0 25px 0;
+        }
+        .grid-2col {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 35px;
+        }
+        .panel-crop {
+            flex: 1.2;
+            min-width: 280px;
+        }
+        .panel-info {
+            flex: 0.9;
+            min-width: 240px;
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 18px 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .img-preview-area {
+            background: #eef2f5;
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+        #imageCropper {
+            max-width: 100%;
+            background: #e2e8f0;
+            border-radius: 16px;
+            display: none;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0 10px;
+        }
+        button {
+            background: #2c9cd4;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 60px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button:hover {
+            background: #1f7ca8;
+            transform: scale(0.98);
+        }
+        .btn-secondary { background: #5b6e8c; }
+        .btn-success { background: #2b7a4b; }
+        .btn-warning { background: #d97706; }
+        .current-size {
+            background: #e6f7ff;
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .size-badge {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #0c4e6e;
+        }
+        .ajustar-panel {
+            background: #ffffffdd;
+            border-radius: 20px;
+            padding: 15px;
+            margin-top: 12px;
+            border: 1px solid #cbdde6;
+        }
+        .input-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .input-campo {
+            flex: 1;
+        }
+        .input-campo label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .input-campo input {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 16px;
+            border: 1px solid #cbd5e1;
+        }
+        .strip-container {
+            margin-top: 30px;
+            border-top: 2px dashed #b9d0e0;
+            padding-top: 20px;
+        }
+        .carnet-strip {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            gap: 0px;
+            background: white;
+            padding: 16px 12px;
+            border-radius: 24px;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        .carnet-photo {
+            display: block;
+            object-fit: cover;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .warning-msg {
+            background: #fff3e0;
+            border-left: 6px solid #f59e0b;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 15px 0 5px;
+        }
+        .status-msg {
+            background: #e6f7ff;
+            border-left: 6px solid #2c9cd4;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 10px 0;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c86a3;
+            margin-top: 30px;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #printSection, #printSection * { visibility: visible; }
+            #printSection {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+            }
+            .carnet-strip { box-shadow: none; padding: 0; margin: 0 auto; }
+            @page { size: A4; margin: 1.2cm; }
+            .no-print, .btn-group, .panel-crop, .panel-info, .sub, h1, footer, .strip-title, .warning-msg, .ajustar-panel {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h2>Sube una foto JPG</h2>
-    <input type="file" id="inputImagen" accept="image/jpeg, image/png">
-    <div id="mensaje"></div>
-    <div id="contenedorImagen"></div>
+<div class="container">
+    <h1>📸 Foto Carnet 5x <small>3cm ancho × 4cm alto</small></h1>
+    <div class="sub">✂️ Sube una foto, recorta el contenido deseado y genera 5 copias idénticas lado a lado. Imprime en A4.</div>
 
-    <script>
-        const input = document.getElementById('inputImagen');
-        const mensaje = document.getElementById('mensaje');
-        const contenedor = document.getElementById('contenedorImagen');
+    <div class="grid-2col">
+        <div class="panel-crop">
+            <div class="img-preview-area">
+                <input type="file" id="uploadImg" accept="image/jpeg, image/png, image/jpg, image/webp">
+                <div id="statusMessage" class="status-msg">✅ Esperando imagen...</div>
+                <div style="position: relative; margin-top: 12px;">
+                    <img id="imageCropper" alt="Foto a recortar">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button id="generateBtn" class="btn-success">✨ Generar 5 copias carnet</button>
+                <button id="printBtn">🖨️ Imprimir tira</button>
+                <button id="resetBtn" class="btn-secondary">⟳ Reiniciar</button>
+            </div>
+            <div class="warning-msg" id="sizeWarningMsg" style="display: none;"></div>
+        </div>
 
-        input.addEventListener('change', (e) => {
-            const archivo = e.target.files[0];
-            if (!archivo) return;
+        <div class="panel-info">
+            <div style="font-weight: bold; margin-bottom: 12px;">📐 Dimensiones de cada foto</div>
+            <div class="current-size">
+                <span>📏 Tamaño actual:</span>
+                <div class="size-badge" id="sizeLabelDisplay">3.0 cm (ancho) × 4.0 cm (alto)</div>
+            </div>
+            <button id="toggleAdjustBtn" class="btn-warning" style="width:100%; margin-bottom: 10px;">⚙️ Ajustar proporciones / tamaño</button>
+            <div id="adjustPanel" style="display: none;" class="ajustar-panel">
+                <div class="input-row">
+                    <div class="input-campo">
+                        <label>📏 Ancho (cm)</label>
+                        <input type="number" id="widthCm" step="0.1" min="1.5" max="5.5" value="3.0">
+                    </div>
+                    <div class="input-campo">
+                        <label>📏 Alto (cm)</label>
+                        <input type="number" id="heightCm" step="0.1" min="2.0" max="7.0" value="4.0">
+                    </div>
+                    <div>
+                        <button id="applySizeBtn">Aplicar</button>
+                    </div>
+                </div>
+                <div style="font-size: 0.7rem; margin-top: 12px;">* El recorte mantendrá la proporción elegida. Se generan a 300 DPI.</div>
+            </div>
+            <hr>
+            <div style="font-size: 0.85rem;">
+                <p>✔️ <strong>Instrucciones:</strong><br>
+                1. Sube tu foto (JPG, PNG).<br>
+                2. Espera a que aparezca la imagen y el recuadro.<br>
+                3. Ajusta el rectángulo de recorte.<br>
+                4. Cambia el tamaño si lo deseas.<br>
+                5. Haz clic en "Generar 5 copias carnet".<br>
+                6. Presiona "Imprimir tira" y elige A4.</p>
+            </div>
+        </div>
+    </div>
 
-            mensaje.innerHTML = `Archivo seleccionado: ${archivo.name}, tamaño: ${archivo.size} bytes, tipo: ${archivo.type}`;
+    <div class="strip-container">
+        <div class="strip-title">🖼️ Tira de 5 fotos carnet (lado a lado)</div>
+        <div id="carnetStrip" class="carnet-strip">
+            <div style="color:#aaa; padding:20px; text-align:center; width:100%;">Aún no hay fotos. Sube una imagen y genera las copias.</div>
+        </div>
+    </div>
+    <footer>✅ 300 DPI para impresión nítida. Cada foto se redimensiona exactamente a los cm indicados.</footer>
+</div>
+<div id="printSection" style="display: none;"></div>
 
-            // Mostrar la imagen usando URL.createObjectURL
-            const url = URL.createObjectURL(archivo);
+<script>
+    // Variables globales
+    let cropper = null;
+    let currentImageURL = null;
+    let targetWidthCm = 3.0;
+    let targetHeightCm = 4.0;
+    const DPI = 300;
+    function cmToPixels(cm) { return Math.round(cm / 2.54 * DPI); }
+
+    // Elementos DOM
+    const fileInput = document.getElementById('uploadImg');
+    const imgElement = document.getElementById('imageCropper');
+    const generateBtn = document.getElementById('generateBtn');
+    const printBtn = document.getElementById('printBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const toggleAdjustBtn = document.getElementById('toggleAdjustBtn');
+    const adjustPanel = document.getElementById('adjustPanel');
+    const widthCmInput = document.getElementById('widthCm');
+    const heightCmInput = document.getElementById('heightCm');
+    const applySizeBtn = document.getElementById('applySizeBtn');
+    const sizeLabelDisplay = document.getElementById('sizeLabelDisplay');
+    const carnetStripDiv = document.getElementById('carnetStrip');
+    const sizeWarningMsg = document.getElementById('sizeWarningMsg');
+    const statusDiv = document.getElementById('statusMessage');
+
+    function setStatus(msg, isError = false) {
+        statusDiv.innerHTML = isError ? `❌ ${msg}` : `✅ ${msg}`;
+        statusDiv.style.background = isError ? '#ffe6e6' : '#e6f7ff';
+        statusDiv.style.borderLeftColor = isError ? '#d9534f' : '#2c9cd4';
+    }
+
+    function updateSizeLabel() {
+        sizeLabelDisplay.innerText = `${targetWidthCm.toFixed(1)} cm (ancho) × ${targetHeightCm.toFixed(1)} cm (alto)`;
+        const totalWidth = targetWidthCm * 5;
+        if (totalWidth > 21) {
+            sizeWarningMsg.style.display = 'block';
+            sizeWarningMsg.innerHTML = `⚠️ El ancho total de la tira es ${totalWidth.toFixed(1)} cm (supera 21 cm del ancho A4). Puede que se recorte al imprimir. Reduce el ancho por foto.`;
+        } else {
+            sizeWarningMsg.style.display = 'none';
+        }
+    }
+
+    function destroyCropper() {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        if (currentImageURL) {
+            URL.revokeObjectURL(currentImageURL);
+            currentImageURL = null;
+        }
+        imgElement.style.display = 'none';
+        imgElement.src = '';
+    }
+
+    // Función principal: cargar archivo y crear cropper SOLO cuando la imagen está lista
+    function loadAndCrop(file) {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            setStatus('El archivo no es una imagen.', true);
+            return;
+        }
+        setStatus('Cargando imagen...');
+        destroyCropper();
+
+        const url = URL.createObjectURL(file);
+        currentImageURL = url;
+        imgElement.src = url;
+        imgElement.style.display = 'block';
+
+        // Esperar a que la imagen esté completamente cargada
+        imgElement.onload = () => {
+            setStatus(`Imagen cargada: ${imgElement.naturalWidth} x ${imgElement.naturalHeight} px. Ajusta el recorte.`);
+            // Ahora inicializar Cropper
+            if (cropper) cropper.destroy();
+            try {
+                const aspect = targetWidthCm / targetHeightCm;
+                cropper = new Cropper(imgElement, {
+                    aspectRatio: aspect,
+                    viewMode: 2,
+                    dragMode: 'crop',
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    autoCropArea: 0.8,
+                    guides: true,
+                    center: true,
+                    highlight: true,
+                });
+                setStatus('Recortador listo. Selecciona el área deseada.');
+            } catch(err) {
+                setStatus('Error al iniciar el recortador: ' + err.message, true);
+            }
+        };
+        imgElement.onerror = () => {
+            setStatus('No se pudo cargar la imagen. Archivo corrupto o formato no soportado.', true);
+            imgElement.style.display = 'none';
+            URL.revokeObjectURL(currentImageURL);
+            currentImageURL = null;
+        };
+    }
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) loadAndCrop(file);
+    });
+
+    function getCroppedCanvas() {
+        if (!cropper) {
+            setStatus('Primero sube una foto.', true);
+            return null;
+        }
+        try {
+            return cropper.getCroppedCanvas();
+        } catch(e) {
+            setStatus('Error al recortar: ' + e.message, true);
+            return null;
+        }
+    }
+
+    function resizeCanvas(canvas, wPx, hPx) {
+        const newCanvas = document.createElement('canvas');
+        newCanvas.width = wPx;
+        newCanvas.height = hPx;
+        const ctx = newCanvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(canvas, 0, 0, wPx, hPx);
+        return newCanvas;
+    }
+
+    function generateFiveCopies() {
+        const croppedCanvas = getCroppedCanvas();
+        if (!croppedCanvas) return;
+
+        const wPx = cmToPixels(targetWidthCm);
+        const hPx = cmToPixels(targetHeightCm);
+        if (wPx <= 0 || hPx <= 0) {
+            setStatus('Dimensiones inválidas.', true);
+            return;
+        }
+
+        const finalCanvas = resizeCanvas(croppedCanvas, wPx, hPx);
+        const dataURL = finalCanvas.toDataURL('image/png');
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < 5; i++) {
             const img = document.createElement('img');
-            img.style.maxWidth = '100%';
-            img.style.border = '1px solid red';
+            img.src = dataURL;
+            img.classList.add('carnet-photo');
+            img.style.width = `${targetWidthCm}cm`;
+            img.style.height = `${targetHeightCm}cm`;
+            img.style.objectFit = 'cover';
+            fragment.appendChild(img);
+        }
+        carnetStripDiv.innerHTML = '';
+        carnetStripDiv.appendChild(fragment);
+        setStatus(`5 copias generadas (${targetWidthCm} x ${targetHeightCm} cm).`);
+        updateSizeLabel();
+    }
 
-            img.onload = () => {
-                mensaje.innerHTML += `<br>✅ IMAGEN CARGADA CORRECTAMENTE. Dimensiones: ${img.naturalWidth} x ${img.naturalHeight}`;
-                URL.revokeObjectURL(url);
-            };
-            img.onerror = (err) => {
-                mensaje.innerHTML += `<br>❌ ERROR: No se pudo cargar la imagen. El archivo parece corrupto o no es una imagen válida.`;
-                console.error('Error de carga', err);
-            };
-            img.src = url;
-            contenedor.innerHTML = '';
-            contenedor.appendChild(img);
-        });
-    </script>
+    function updateCropperAspect() {
+        if (cropper) {
+            cropper.setAspectRatio(targetWidthCm / targetHeightCm);
+        }
+    }
+
+    function applyNewSize() {
+        let w = parseFloat(widthCmInput.value);
+        let h = parseFloat(heightCmInput.value);
+        if (isNaN(w) || isNaN(h) || w <= 0 || h <= 0) {
+            setStatus('Ingresa valores positivos.', true);
+            return;
+        }
+        w = Math.min(8, Math.max(1, w));
+        h = Math.min(10, Math.max(1, h));
+        targetWidthCm = w;
+        targetHeightCm = h;
+        widthCmInput.value = targetWidthCm.toFixed(1);
+        heightCmInput.value = targetHeightCm.toFixed(1);
+        updateSizeLabel();
+        updateCropperAspect();
+        setStatus(`Tamaño cambiado a ${targetWidthCm} x ${targetHeightCm} cm. Vuelve a generar las copias si es necesario.`);
+    }
+
+    function resetAll() {
+        destroyCropper();
+        fileInput.value = '';
+        carnetStripDiv.innerHTML = '<div style="color:#aaa; padding:20px; text-align:center; width:100%;">Aún no hay fotos. Sube una imagen y genera las copias.</div>';
+        targetWidthCm = 3.0;
+        targetHeightCm = 4.0;
+        widthCmInput.value = "3.0";
+        heightCmInput.value = "4.0";
+        updateSizeLabel();
+        adjustPanel.style.display = 'none';
+        toggleAdjustBtn.innerText = '⚙️ Ajustar proporciones / tamaño';
+        setStatus('Todo reiniciado. Puedes subir una nueva foto.');
+    }
+
+    function printStrip() {
+        const strip = document.getElementById('carnetStrip');
+        if (!strip.children.length || strip.children[0].tagName !== 'IMG') {
+            setStatus('No hay fotos generadas. Primero haz clic en "Generar 5 copias".', true);
+            return;
+        }
+        const clone = strip.cloneNode(true);
+        clone.style.display = 'flex';
+        clone.style.justifyContent = 'center';
+        const printDiv = document.getElementById('printSection');
+        printDiv.innerHTML = '';
+        printDiv.appendChild(clone);
+        window.print();
+        setTimeout(() => { printDiv.innerHTML = ''; }, 500);
+    }
+
+    // Eventos
+    generateBtn.addEventListener('click', generateFiveCopies);
+    printBtn.addEventListener('click', printStrip);
+    resetBtn.addEventListener('click', resetAll);
+    toggleAdjustBtn.addEventListener('click', () => {
+        adjustPanel.style.display = adjustPanel.style.display === 'none' ? 'block' : 'none';
+        toggleAdjustBtn.innerText = adjustPanel.style.display === 'none' ? '⚙️ Ajustar proporciones / tamaño' : '🔽 Ocultar ajustes';
+    });
+    applySizeBtn.addEventListener('click', applyNewSize);
+    widthCmInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') applyNewSize(); });
+    heightCmInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') applyNewSize(); });
+    updateSizeLabel();
+</script>
 </body>
 </html>
