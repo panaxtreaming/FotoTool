@@ -234,7 +234,6 @@
             transition: 0.1s;
         }
 
-        /* Espaciado visual entre fotos para impresión real (sin márgenes de impresión) */
         .carnet-strip .carnet-photo {
             margin: 0;
             border: 1px solid #e9ecef;
@@ -251,6 +250,15 @@
             border-radius: 20px;
             font-size: 0.8rem;
             margin: 15px 0 5px;
+        }
+
+        .status-msg {
+            background: #e6f7ff;
+            border-left: 6px solid #2c9cd4;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 10px 0;
         }
 
         footer {
@@ -316,8 +324,9 @@
         <!-- Área de recorte -->
         <div class="panel-crop">
             <div class="img-preview-area">
-                <input type="file" id="uploadImg" accept="image/jpeg, image/png, image/jpg, image/webp" style="margin-bottom: 15px;">
-                <div style="position: relative;">
+                <input type="file" id="uploadImg" accept="image/jpeg, image/png, image/jpg, image/webp, image/bmp">
+                <div id="statusMessage" class="status-msg" style="margin-top: 12px;">✅ Esperando imagen...</div>
+                <div style="position: relative; margin-top: 12px;">
                     <img id="imageCropper" alt="Foto a recortar" style="max-width:100%; display: none;">
                 </div>
             </div>
@@ -358,11 +367,12 @@
             <hr style="margin: 15px 0; opacity:0.3;">
             <div style="font-size: 0.85rem;">
                 <p>✔️ <strong>Instrucciones:</strong><br>
-                1. Sube tu foto.<br>
-                2. Ajusta el rectángulo de recorte sobre la zona que quieras (cara, documento, etc).<br>
-                3. Si lo deseas, cambia el tamaño final usando <strong>"Ajustar proporciones"</strong>.<br>
-                4. Haz clic en "Generar 5 copias carnet".<br>
-                5. Presiona "Imprimir tira" y elige impresión en A4.<br>
+                1. Sube tu foto (JPG, PNG, etc).<br>
+                2. Espera a que aparezca la imagen y el recuadro.<br>
+                3. Ajusta el rectángulo de recorte sobre la zona que quieras.<br>
+                4. Si lo deseas, cambia el tamaño final usando <strong>"Ajustar proporciones"</strong>.<br>
+                5. Haz clic en "Generar 5 copias carnet".<br>
+                6. Presiona "Imprimir tira" y elige impresión en A4.<br>
                 🔹 Las 5 fotos se generan lado a lado con las dimensiones exactas (cm) para impresión real.</p>
             </div>
         </div>
@@ -393,7 +403,6 @@
     
     // Resolución para impresión: 300 DPI (píxeles por pulgada)
     const DPI = 300;
-    // Factor de conversión cm a pulgadas: 1 cm = 1/2.54 pulgadas
     function cmToPixels(cm) {
         return Math.round(cm / 2.54 * DPI);
     }
@@ -412,11 +421,17 @@
     const sizeLabelDisplay = document.getElementById('sizeLabelDisplay');
     const carnetStripDiv = document.getElementById('carnetStrip');
     const sizeWarningMsg = document.getElementById('sizeWarningMsg');
+    const statusMessageDiv = document.getElementById('statusMessage');
+    
+    function setStatus(msg, isError = false) {
+        statusMessageDiv.innerHTML = isError ? `❌ ${msg}` : `✅ ${msg}`;
+        statusMessageDiv.style.background = isError ? '#ffe6e6' : '#e6f7ff';
+        statusMessageDiv.style.borderLeftColor = isError ? '#d9534f' : '#2c9cd4';
+    }
     
     // Actualizar etiqueta visual de tamaño
     function updateSizeLabel() {
         sizeLabelDisplay.innerText = `${targetWidthCm.toFixed(1)} cm (ancho) × ${targetHeightCm.toFixed(1)} cm (alto)`;
-        // Advertencia si ancho total > 21cm (A4)
         const totalWidthCm = targetWidthCm * 5;
         if (totalWidthCm > 21) {
             sizeWarningMsg.style.display = 'block';
@@ -426,228 +441,238 @@
         }
     }
     
-    // Destruir cropper anterior si existe
+    // Destruir cropper anterior y liberar URL
     function destroyCropper() {
         if (cropper) {
-            cropper.destroy();
+            try {
+                cropper.destroy();
+            } catch(e) { console.warn(e); }
             cropper = null;
         }
         if (currentImageURL) {
             URL.revokeObjectURL(currentImageURL);
             currentImageURL = null;
         }
+        imgElement.style.display = 'none';
+        imgElement.src = '';
     }
     
-    // Inicializar cropper con la imagen cargada y aspecto según target (ancho/alto)
+    // Inicializar cropper con la imagen cargada
     function initCropper(imageSrc) {
-        destroyCropper();
-        imgElement.src = imageSrc;
-        imgElement.style.display = 'block';
-        // Esperar a que la imagen cargue para crear cropper
-        imgElement.onload = () => {
-            if (cropper) cropper.destroy();
-            const aspect = targetWidthCm / targetHeightCm;  // ej: 3/4 = 0.75
-            cropper = new Cropper(imgElement, {
-                aspectRatio: aspect,
-                viewMode: 2,      // permite mover la imagen dentro del recuadro
-                dragMode: 'crop',
-                cropBoxMovable: true,
-                cropBoxResizable: true,
-                background: true,
-                autoCropArea: 0.8,
-                guides: true,
-                center: true,
-                highlight: true,
-            });
-        };
-        if (imgElement.complete) {
-            imgElement.onload();
-        }
+        return new Promise((resolve, reject) => {
+            destroyCropper();
+            imgElement.src = imageSrc;
+            imgElement.style.display = 'block';
+            
+            const onLoad = () => {
+                imgElement.removeEventListener('load', onLoad);
+                imgElement.removeEventListener('error', onError);
+                try {
+                    if (cropper) cropper.destroy();
+                    const aspect = targetWidthCm / targetHeightCm;
+                    cropper = new Cropper(imgElement, {
+                        aspectRatio: aspect,
+                        viewMode: 2,
+                        dragMode: 'crop',
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        background: true,
+                        autoCropArea: 0.8,
+                        guides: true,
+                        center: true,
+                        highlight: true,
+                    });
+                    setStatus(`Imagen cargada correctamente. Ajusta el recorte.`);
+                    resolve();
+                } catch(err) {
+                    console.error(err);
+                    reject(new Error('Error al crear el recortador: ' + err.message));
+                }
+            };
+            
+            const onError = () => {
+                imgElement.removeEventListener('load', onLoad);
+                imgElement.removeEventListener('error', onError);
+                reject(new Error('No se pudo cargar la imagen. Formato no soportado o archivo dañado.'));
+            };
+            
+            imgElement.addEventListener('load', onLoad);
+            imgElement.addEventListener('error', onError);
+            
+            // Si la imagen ya está en caché y ya se cargó
+            if (imgElement.complete && imgElement.naturalWidth > 0) {
+                onLoad();
+            }
+        });
     }
     
     // Cuando se sube una nueva imagen
-    fileInput.addEventListener('change', (e) => {
+    fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        
         if (!file.type.startsWith('image/')) {
-            alert('Por favor selecciona un archivo de imagen válido.');
+            setStatus('El archivo no es una imagen válida. Por favor selecciona JPG, PNG, etc.', true);
             return;
         }
+        
+        setStatus('Cargando imagen...');
         currentImageFile = file;
+        
+        // Liberar URL anterior si existe
+        if (currentImageURL) {
+            URL.revokeObjectURL(currentImageURL);
+        }
+        
         const objectURL = URL.createObjectURL(file);
         currentImageURL = objectURL;
-        initCropper(objectURL);
-        // Limpiar tira generada anteriormente
-        carnetStripDiv.innerHTML = '<div style="color:#aaa; padding:20px; text-align:center; width:100%;">Foto cargada. Ajusta el recorte y haz clic en "Generar 5 copias".</div>';
+        
+        try {
+            await initCropper(objectURL);
+            // Limpiar tira generada anteriormente
+            carnetStripDiv.innerHTML = '<div style="color:#aaa; padding:20px; text-align:center; width:100%;">Foto cargada. Ajusta el recorte y haz clic en "Generar 5 copias".</div>';
+        } catch(err) {
+            setStatus(err.message, true);
+            console.error(err);
+            imgElement.style.display = 'none';
+            if (currentImageURL) {
+                URL.revokeObjectURL(currentImageURL);
+                currentImageURL = null;
+            }
+        }
     });
     
-    // Obtener canvas recortado con la selección actual, respetando la relación de aspecto fijada en cropper
-    // Pero devolvemos el canvas crudo (con el recorte exacto, tamaño original en píxeles)
+    // Obtener canvas recortado
     function getCroppedCanvasRaw() {
         if (!cropper) {
-            alert('Primero sube una foto.');
+            setStatus('Primero sube una foto y espera a que se cargue.', true);
             return null;
         }
         try {
-            // Obtiene el canvas con el área recortada (resolución original de la zona)
             const croppedCanvas = cropper.getCroppedCanvas();
             if (!croppedCanvas) {
-                alert('No se pudo recortar la imagen. Intenta de nuevo.');
+                setStatus('No se pudo recortar la imagen. Intenta de nuevo.', true);
                 return null;
             }
             return croppedCanvas;
         } catch(err) {
             console.error(err);
-            alert('Error al recortar, verifica la imagen.');
+            setStatus('Error al recortar: ' + err.message, true);
             return null;
         }
     }
     
-    // Redimensionar un canvas a las dimensiones exactas (píxeles) manteniendo calidad
     function resizeCanvasToExactSize(sourceCanvas, targetWidthPx, targetHeightPx) {
         const resizedCanvas = document.createElement('canvas');
         resizedCanvas.width = targetWidthPx;
         resizedCanvas.height = targetHeightPx;
         const ctx = resizedCanvas.getContext('2d');
-        // Usar filtro de alta calidad para redimensionado
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(sourceCanvas, 0, 0, targetWidthPx, targetHeightPx);
         return resizedCanvas;
     }
     
-    // Generar 5 copias a partir del recorte actual
+    // Generar 5 copias
     function generateFiveCopies() {
         if (!cropper) {
-            alert('Por favor sube una foto primero.');
+            setStatus('No hay ninguna foto cargada. Sube una imagen primero.', true);
             return;
         }
         const croppedCanvas = getCroppedCanvasRaw();
         if (!croppedCanvas) return;
         
-        // Calcular píxeles objetivo según cm actuales
         const targetWidthPx = cmToPixels(targetWidthCm);
         const targetHeightPx = cmToPixels(targetHeightCm);
         
         if (targetWidthPx <= 0 || targetHeightPx <= 0) {
-            alert('Las dimensiones deben ser mayores a 0 cm.');
+            setStatus('Las dimensiones deben ser mayores a 0 cm.', true);
             return;
         }
         
-        // Redimensionar el recorte al tamaño exacto del carnet (alta calidad)
-        const finalImageCanvas = resizeCanvasToExactSize(croppedCanvas, targetWidthPx, targetHeightPx);
-        const imageDataURL = finalImageCanvas.toDataURL('image/png');  // PNG para máxima calidad
-        
-        // Crear 5 copias
-        const fragment = document.createDocumentFragment();
-        for (let i = 0; i < 5; i++) {
-            const img = document.createElement('img');
-            img.src = imageDataURL;
-            img.classList.add('carnet-photo');
-            // Aplicar estilos en cm para impresión exacta
-            img.style.width = `${targetWidthCm}cm`;
-            img.style.height = `${targetHeightCm}cm`;
-            img.style.objectFit = 'cover';
-            img.style.display = 'block';
-            // Atributo para que no se rompa la calidad
-            img.setAttribute('data-pixels', `${targetWidthPx}x${targetHeightPx}`);
-            fragment.appendChild(img);
-        }
-        
-        // Limpiar y mostrar nueva tira
-        carnetStripDiv.innerHTML = '';
-        carnetStripDiv.appendChild(fragment);
-        
-        // Mostrar mensaje de éxito
-        const totalStripWidth = targetWidthCm * 5;
-        let nota = `✅ 5 copias generadas (${targetWidthCm} x ${targetHeightCm} cm cada una). `;
-        if (totalStripWidth > 21) {
-            nota += `\n⚠️ El ancho total de la tira es ${totalStripWidth.toFixed(1)} cm, puede que no quepa en A4. Considera reducir el ancho.`;
-            alert(nota);
-        } else {
-            // mensaje sutil
-            console.log('Tira lista');
+        try {
+            const finalImageCanvas = resizeCanvasToExactSize(croppedCanvas, targetWidthPx, targetHeightPx);
+            const imageDataURL = finalImageCanvas.toDataURL('image/png');
+            
+            const fragment = document.createDocumentFragment();
+            for (let i = 0; i < 5; i++) {
+                const img = document.createElement('img');
+                img.src = imageDataURL;
+                img.classList.add('carnet-photo');
+                img.style.width = `${targetWidthCm}cm`;
+                img.style.height = `${targetHeightCm}cm`;
+                img.style.objectFit = 'cover';
+                img.style.display = 'block';
+                fragment.appendChild(img);
+            }
+            
+            carnetStripDiv.innerHTML = '';
+            carnetStripDiv.appendChild(fragment);
+            setStatus(`✅ 5 copias generadas (${targetWidthCm} x ${targetHeightCm} cm cada una).`);
+            
+            const totalStripWidth = targetWidthCm * 5;
+            if (totalStripWidth > 21) {
+                setStatus(`⚠️ El ancho total de la tira es ${totalStripWidth.toFixed(1)} cm, puede que no quepa en A4. Considera reducir el ancho.`, false);
+            }
+        } catch(err) {
+            setStatus('Error al generar las copias: ' + err.message, true);
         }
     }
     
-    // Función para actualizar el aspecto del cropper cuando se cambian las dimensiones
     function updateCropperAspectRatio() {
         if (cropper) {
             const newAspect = targetWidthCm / targetHeightCm;
             cropper.setAspectRatio(newAspect);
-            // Opcional: forzar redibujo sin perder recorte
-            cropper.setCropBoxData({}); // Mantiene caja actual pero respeta aspecto, a veces reajusta
         }
     }
     
-    // Aplicar nuevo tamaño desde panel
     function applyNewSize() {
         let newWidth = parseFloat(widthCmInput.value);
         let newHeight = parseFloat(heightCmInput.value);
         if (isNaN(newWidth) || isNaN(newHeight) || newWidth <= 0 || newHeight <= 0) {
-            alert('Ingresa valores válidos mayores a 0 cm');
+            setStatus('Ingresa valores válidos mayores a 0 cm', true);
             return;
         }
-        // Limitar rangos razonables
-        if (newWidth > 8) newWidth = 8;
-        if (newHeight > 10) newHeight = 10;
-        if (newWidth < 1) newWidth = 1;
-        if (newHeight < 1) newHeight = 1;
+        newWidth = Math.min(8, Math.max(1, newWidth));
+        newHeight = Math.min(10, Math.max(1, newHeight));
         
         targetWidthCm = newWidth;
         targetHeightCm = newHeight;
         
-        // Sincronizar inputs
         widthCmInput.value = targetWidthCm.toFixed(1);
         heightCmInput.value = targetHeightCm.toFixed(1);
         
         updateSizeLabel();
         updateCropperAspectRatio();
         
-        // Si ya había tira generada, opcionalmente avisar que debe regenerar
         if (carnetStripDiv.children.length > 0 && carnetStripDiv.children[0].tagName === 'IMG') {
-            alert(`Tamaño actualizado a ${targetWidthCm} x ${targetHeightCm} cm.\nDebes hacer clic en "Generar 5 copias" para actualizar las fotos.`);
+            setStatus(`Tamaño actualizado a ${targetWidthCm} x ${targetHeightCm} cm. Debes hacer clic en "Generar 5 copias" para actualizar las fotos.`, false);
         } else {
-            // Si no hay tira, solo se actualiza el ratio
+            setStatus(`Tamaño actualizado a ${targetWidthCm} x ${targetHeightCm} cm.`, false);
         }
     }
     
-    // Reiniciar todo: borrar imagen, cropper, tira, resetear tamaños por defecto
     function resetAll() {
         destroyCropper();
-        imgElement.style.display = 'none';
-        imgElement.src = '';
         fileInput.value = '';
         carnetStripDiv.innerHTML = '<div style="color:#aaa; padding:20px; text-align:center; width:100%;">Aún no hay fotos. Sube una imagen y genera las copias.</div>';
-        // Resetear dimensiones a 3x4
         targetWidthCm = 3.0;
         targetHeightCm = 4.0;
         widthCmInput.value = "3.0";
         heightCmInput.value = "4.0";
         updateSizeLabel();
-        if (cropper) {
-            cropper.destroy();
-            cropper = null;
-        }
-        // Cerrar panel ajuste
         adjustPanel.style.display = 'none';
         toggleAdjustBtn.innerText = '⚙️ Ajustar proporciones / tamaño';
-        // Si hay url revocarla
-        if (currentImageURL) {
-            URL.revokeObjectURL(currentImageURL);
-            currentImageURL = null;
-        }
+        setStatus('Todo reiniciado. Puedes subir una nueva foto.');
     }
     
-    // Imprimir la tira de fotos (solo las imágenes generadas)
     function printStrip() {
         const stripContainer = document.getElementById('carnetStrip');
         if (!stripContainer || stripContainer.children.length === 0 || stripContainer.children[0].tagName !== 'IMG') {
-            alert('No hay fotos generadas. Primero genera las 5 copias.');
+            setStatus('No hay fotos generadas. Primero genera las 5 copias.', true);
             return;
         }
         
-        // Clonar la tira para impresión sin afectar vista
         const printClone = stripContainer.cloneNode(true);
         printClone.classList.add('carnet-strip');
         printClone.style.display = 'flex';
@@ -658,17 +683,14 @@
         printClone.style.padding = '0';
         printClone.style.backgroundColor = 'white';
         
-        // Asegurar que cada imagen tenga dimensiones exactas en cm
         const images = printClone.querySelectorAll('img');
         images.forEach(img => {
             img.style.width = `${targetWidthCm}cm`;
             img.style.height = `${targetHeightCm}cm`;
             img.style.display = 'block';
             img.style.pageBreakInside = 'avoid';
-            img.style.breakInside = 'avoid';
         });
         
-        // Crear contenedor exclusivo para impresión
         let printSection = document.getElementById('printSection');
         if (!printSection) {
             printSection = document.createElement('div');
@@ -686,20 +708,17 @@
         wrapper.appendChild(printClone);
         printSection.appendChild(wrapper);
         
-        // Mostrar impresión
         window.print();
         
-        // Limpiar después de imprimir (opcional)
         setTimeout(() => {
             printSection.innerHTML = '';
         }, 500);
     }
     
-    // Eventos UI
+    // Eventos
     generateBtn.addEventListener('click', generateFiveCopies);
     printBtn.addEventListener('click', printStrip);
     resetBtn.addEventListener('click', resetAll);
-    
     toggleAdjustBtn.addEventListener('click', () => {
         if (adjustPanel.style.display === 'none') {
             adjustPanel.style.display = 'block';
@@ -709,21 +728,12 @@
             toggleAdjustBtn.innerText = '⚙️ Ajustar proporciones / tamaño';
         }
     });
-    
     applySizeBtn.addEventListener('click', applyNewSize);
-    
-    // Actualizar vista de tamaño inicial
-    updateSizeLabel();
-    
-    // Si por alguna razón se modifica manualmente los inputs antes de aplicar, no afecta hasta aplicar
-    // También sincronizar al escribir enter
     widthCmInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') applyNewSize(); });
     heightCmInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') applyNewSize(); });
     
-    // Prevenir conflictos, limpiar bien al recargar
-    window.addEventListener('beforeunload', () => {
-        if (currentImageURL) URL.revokeObjectURL(currentImageURL);
-    });
+    updateSizeLabel();
+    setStatus('Listo. Sube una foto JPG o PNG.');
 </script>
 </body>
 </html>
