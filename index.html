@@ -463,7 +463,7 @@
         setStatus('Todo reiniciado. Puedes subir una nueva foto.');
     }
 
-    // ========== FUNCIÓN DE IMPRESIÓN CON IFRAME ==========
+    // ========== FUNCIÓN DE IMPRESIÓN CON IFRAME (márgenes superior e izquierdo de 1cm) ==========
     function printStrip() {
         const stripDiv = document.getElementById('carnetStrip');
         if (!stripDiv.children.length || stripDiv.children[0].tagName !== 'IMG') {
@@ -471,14 +471,15 @@
             return;
         }
 
-        // Obtener las URLs de las imágenes actuales (son dataURLs)
+        // Obtener las URLs de las imágenes actuales (dataURLs)
         const images = stripDiv.querySelectorAll('img');
         const imagesData = [];
         for (let img of images) {
-            imagesData.push(img.src); // data:image/png;base64,...
+            imagesData.push(img.src);
         }
 
         // Construir el HTML para el iframe con las imágenes y estilos de impresión
+        // Ahora la tira se posiciona en la esquina superior izquierda (margin: 1cm 0 0 1cm)
         const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -492,22 +493,18 @@
                         box-sizing: border-box;
                     }
                     body {
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        min-height: 100vh;
                         background: white;
-                        margin: 0;
+                        margin: 1cm 0 0 1cm;  /* Margen superior 1cm, izquierdo 1cm */
                         padding: 0;
                     }
                     .print-strip {
                         display: flex;
                         flex-direction: row;
                         flex-wrap: nowrap;
-                        justify-content: center;
-                        align-items: center;
+                        justify-content: flex-start;  /* Alinear a la izquierda */
+                        align-items: flex-start;      /* Alinear arriba */
                         gap: 0px;
-                        margin: 0 auto;
+                        margin: 0;
                         padding: 0;
                         background: white;
                     }
@@ -523,8 +520,7 @@
                     }
                     @media print {
                         body {
-                            margin: 1cm 1cm 1cm 1cm;
-                            padding: 0;
+                            margin: 1cm 0 0 1cm;
                         }
                         .print-strip {
                             page-break-after: avoid;
@@ -536,7 +532,7 @@
                     }
                     @page {
                         size: A4;
-                        margin: 1cm;
+                        margin: 0;  /* Los márgenes los controlamos con body */
                     }
                 </style>
             </head>
@@ -551,20 +547,18 @@
         // Escribir en el iframe
         const iframe = printIframe;
         iframe.srcdoc = htmlContent;
-        iframe.style.visibility = 'visible'; // necesario para algunos navegadores
+        iframe.style.visibility = 'visible';
         iframe.style.position = 'absolute';
         iframe.style.width = '1px';
         iframe.style.height = '1px';
         iframe.style.top = '-100px';
         iframe.style.left = '-100px';
 
-        // Esperar a que el contenido del iframe cargue y luego imprimir
         iframe.onload = () => {
             try {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
                 setStatus('Enviado a impresión. Cierra la ventana de impresión cuando termines.');
-                // Restaurar visibilidad después de imprimir
                 setTimeout(() => {
                     iframe.style.visibility = 'hidden';
                 }, 1000);
