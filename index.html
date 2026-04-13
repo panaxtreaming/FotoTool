@@ -190,63 +190,6 @@
             color: #6c86a3;
             margin-top: 30px;
         }
-
-        /* ========== ESTILOS DE IMPRESIÓN CORREGIDOS ========== */
-        @media print {
-            /* Eliminar todo el contenido de la pantalla */
-            body * {
-                visibility: hidden;
-                display: none;
-            }
-            /* Solo mostrar la sección de impresión */
-            #printSection, #printSection * {
-                visibility: visible;
-                display: block;
-            }
-            #printSection {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                background: white;
-            }
-            /* La tira de fotos */
-            .print-strip {
-                display: flex !important;
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                justify-content: center !important;
-                align-items: center !important;
-                margin: 0 auto !important;
-                padding: 0 !important;
-                gap: 0 !important;
-                background: white !important;
-            }
-            .print-strip img {
-                display: block !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-            }
-            /* Configurar márgenes de la hoja: 1cm superior, inferior, izquierdo, derecho */
-            @page {
-                size: A4;
-                margin: 1cm 1cm 1cm 1cm;
-            }
-            /* Eliminar cualquier encabezado o pie de página automático del navegador */
-            html, body {
-                margin: 0;
-                padding: 0;
-                background: white;
-            }
-        }
     </style>
 </head>
 <body>
@@ -315,7 +258,6 @@
     </div>
     <footer>✅ 300 DPI para impresión nítida. Cada foto se redimensiona exactamente a los cm indicados.</footer>
 </div>
-<div id="printSection" style="display: none;"></div>
 
 <script>
     // Variables globales
@@ -511,7 +453,7 @@
         setStatus('Todo reiniciado. Puedes subir una nueva foto.');
     }
 
-    // Función de impresión mejorada
+    // ========== NUEVA FUNCIÓN DE IMPRESIÓN CON VENTANA EMERGENTE ==========
     function printStrip() {
         const strip = document.getElementById('carnetStrip');
         if (!strip.children.length || strip.children[0].tagName !== 'IMG') {
@@ -519,31 +461,100 @@
             return;
         }
 
-        // Clonar la tira y sus imágenes
+        // Clonar la tira completa (incluyendo estilos en línea)
         const cloneStrip = strip.cloneNode(true);
-        // Añadir una clase especial para impresión
-        cloneStrip.classList.add('print-strip');
-        // Eliminar estilos inline que puedan interferir (pero conservar width/height)
-        cloneStrip.style.cssText = 'display: flex !important; flex-direction: row !important; justify-content: center !important; align-items: center !important; margin: 0 auto !important; padding: 0 !important; gap: 0 !important; background: white !important;';
+        // Eliminar cualquier estilo no deseado y aplicar estilos de impresión
+        cloneStrip.style.cssText = 'display: flex; flex-direction: row; justify-content: center; align-items: center; margin: 0 auto; padding: 0; gap: 0; background: white;';
         
-        // Asegurar que cada imagen mantenga sus dimensiones en cm
+        // Asegurar que cada imagen tenga las dimensiones correctas en cm
         const images = cloneStrip.querySelectorAll('img');
         images.forEach(img => {
-            img.style.cssText = `display: block !important; width: ${targetWidthCm}cm !important; height: ${targetHeightCm}cm !important; margin: 0 !important; padding: 0 !important; border: none !important; box-shadow: none !important;`;
+            img.style.cssText = `display: block; width: ${targetWidthCm}cm; height: ${targetHeightCm}cm; margin: 0; padding: 0; border: none; box-shadow: none; object-fit: cover;`;
         });
 
-        // Preparar el contenedor de impresión
-        const printSection = document.getElementById('printSection');
-        printSection.innerHTML = '';
-        printSection.appendChild(cloneStrip);
+        // Crear un documento HTML completo para la ventana emergente
+        const printWindow = window.open('', '_blank', 'width=800,height=600,toolbar=yes,menubar=yes,scrollbars=yes');
+        if (!printWindow) {
+            setStatus('El navegador bloqueó la ventana emergente. Permite popups para este sitio.', true);
+            return;
+        }
 
-        // Forzar la impresión con los márgenes configurados en CSS
-        window.print();
-        
-        // Limpiar después de imprimir (opcional)
-        setTimeout(() => {
-            printSection.innerHTML = '';
-        }, 100);
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Imprimir tira de fotos carnet</title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    body {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        background: white;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .print-strip {
+                        display: flex;
+                        flex-direction: row;
+                        flex-wrap: nowrap;
+                        justify-content: center;
+                        align-items: center;
+                        gap: 0px;
+                        margin: 0 auto;
+                        padding: 0;
+                        background: white;
+                    }
+                    .print-strip img {
+                        display: block;
+                        margin: 0;
+                        padding: 0;
+                        border: none;
+                        box-shadow: none;
+                    }
+                    @media print {
+                        body {
+                            margin: 1cm 1cm 1cm 1cm;
+                            padding: 0;
+                        }
+                        .print-strip {
+                            page-break-after: avoid;
+                            page-break-inside: avoid;
+                        }
+                        img {
+                            page-break-inside: avoid;
+                        }
+                    }
+                    @page {
+                        size: A4;
+                        margin: 1cm;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="print-strip">
+                    ${cloneStrip.outerHTML}
+                </div>
+                <script>
+                    // Auto-imprimir y cerrar después de imprimir (opcional)
+                    window.onload = function() {
+                        window.print();
+                        window.onafterprint = function() { window.close(); };
+                        // Fallback: si no soporta onafterprint, cerrar tras 5 segundos
+                        setTimeout(function() { window.close(); }, 5000);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        setStatus('Ventana de impresión abierta. Si no aparece, permite ventanas emergentes.');
     }
 
     // Eventos
