@@ -154,6 +154,19 @@
             font-weight: normal;
             cursor: pointer;
         }
+        .radio-group {
+            margin: 15px 0;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .radio-group label {
+            font-weight: normal;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .strip-container {
             margin-top: 30px;
             border-top: 2px dashed #b9d0e0;
@@ -176,7 +189,6 @@
             object-fit: cover;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
-        /* Clase para separación de 2mm */
         .with-gap {
             margin-right: 2mm;
         }
@@ -208,6 +220,14 @@
             height: 0;
             border: 0;
             visibility: hidden;
+        }
+        /* Mejora para impresión en papel fotográfico */
+        @media print {
+            .photo-quality {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                filter: contrast(1.05) saturate(1.05);
+            }
         }
     </style>
 </head>
@@ -258,16 +278,27 @@
                     <input type="checkbox" id="gapCheckbox">
                     <label for="gapCheckbox">🔹 Separación de 2 mm entre fotos</label>
                 </div>
-                <div style="font-size: 0.7rem; margin-top: 12px;">* El recorte mantendrá la proporción elegida. Se generan a 300 DPI.</div>
+                <div class="radio-group">
+                    <span>🖨️ Tipo de papel:</span>
+                    <label>
+                        <input type="radio" name="paperType" value="normal" checked> Papel normal
+                    </label>
+                    <label>
+                        <input type="radio" name="paperType" value="fotografico"> Papel fotográfico
+                    </label>
+                </div>
+                <div style="font-size: 0.7rem; margin-top: 12px;">* El recorte mantendrá la proporción elegida. Se generan a 300 DPI.<br>
+                📌 Al imprimir, recuerda seleccionar el tipo de papel en la ventana de impresión de tu navegador.</div>
             </div>
             <hr>
             <div style="font-size: 0.85rem;">
                 <p>✔️ <strong>Instrucciones:</strong><br>
                 1. Sube tu foto (JPG, PNG).<br>
                 2. Ajusta el rectángulo de recorte.<br>
-                3. Cambia el tamaño o activa separación si lo deseas.<br>
+                3. Cambia el tamaño, separación o tipo de papel si lo deseas.<br>
                 4. Haz clic en "Generar 6 copias carnet".<br>
-                5. Presiona "Imprimir tira" y elige A4.</p>
+                5. Presiona "Imprimir tira" y elige A4.<br>
+                6. En el diálogo de impresión, selecciona "Papel fotográfico" si corresponde y ajusta la calidad.</p>
             </div>
         </div>
     </div>
@@ -289,7 +320,8 @@
     let currentImageURL = null;
     let targetWidthCm = 3.0;
     let targetHeightCm = 4.0;
-    let useGap = false;      // separación de 2mm
+    let useGap = false;
+    let paperType = "normal"; // "normal" o "fotografico"
     const DPI = 300;
     function cmToPixels(cm) { return Math.round(cm / 2.54 * DPI); }
 
@@ -305,6 +337,8 @@
     const heightCmInput = document.getElementById('heightCm');
     const applySizeBtn = document.getElementById('applySizeBtn');
     const gapCheckbox = document.getElementById('gapCheckbox');
+    const radioNormal = document.querySelector('input[value="normal"]');
+    const radioFoto = document.querySelector('input[value="fotografico"]');
     const sizeLabelDisplay = document.getElementById('sizeLabelDisplay');
     const carnetStripDiv = document.getElementById('carnetStrip');
     const sizeWarningMsg = document.getElementById('sizeWarningMsg');
@@ -319,7 +353,7 @@
 
     function updateSizeLabel() {
         sizeLabelDisplay.innerText = `${targetWidthCm.toFixed(1)} cm (ancho) × ${targetHeightCm.toFixed(1)} cm (alto)`;
-        const totalWidth = targetWidthCm * 6 + (useGap ? 0.2 * 5 : 0); // 6 fotos + 5 espacios de 2mm (0.2cm)
+        const totalWidth = targetWidthCm * 6 + (useGap ? 0.2 * 5 : 0);
         if (totalWidth > 21) {
             sizeWarningMsg.style.display = 'block';
             sizeWarningMsg.innerHTML = `⚠️ El ancho total de la tira es ${totalWidth.toFixed(1)} cm (supera 21 cm del ancho A4). Puede que se recorte al imprimir. Reduce el ancho por foto o desactiva la separación.`;
@@ -435,7 +469,6 @@
             img.style.width = `${targetWidthCm}cm`;
             img.style.height = `${targetHeightCm}cm`;
             img.style.objectFit = 'cover';
-            // Aplicar gap si está activado (excepto a la última foto)
             if (useGap && i < numPhotos - 1) {
                 img.style.marginRight = '2mm';
             } else {
@@ -445,7 +478,7 @@
         }
         carnetStripDiv.innerHTML = '';
         carnetStripDiv.appendChild(fragment);
-        setStatus(`6 copias generadas (${targetWidthCm} x ${targetHeightCm} cm)${useGap ? ' con separación de 2mm' : ' sin separación'}.`);
+        setStatus(`6 copias generadas (${targetWidthCm} x ${targetHeightCm} cm)${useGap ? ' con separación de 2mm' : ' sin separación'}. Papel: ${paperType === 'fotografico' ? 'fotográfico' : 'normal'}`);
         updateSizeLabel();
     }
 
@@ -483,32 +516,48 @@
         heightCmInput.value = "4.0";
         gapCheckbox.checked = false;
         useGap = false;
+        radioNormal.checked = true;
+        paperType = "normal";
         updateSizeLabel();
         adjustPanel.style.display = 'none';
         toggleAdjustBtn.innerText = '⚙️ Ajustar proporciones / tamaño';
         setStatus('Todo reiniciado. Puedes subir una nueva foto.');
     }
 
-    // Escuchar cambios en el checkbox
     gapCheckbox.addEventListener('change', (e) => {
         useGap = e.target.checked;
         updateSizeLabel();
-        // Si ya hay fotos generadas, actualizar la vista previa con el nuevo gap
         const stripDiv = document.getElementById('carnetStrip');
         if (stripDiv.children.length && stripDiv.children[0].tagName === 'IMG') {
-            // Regenerar las copias con la nueva configuración
             generateSixCopies();
         } else {
             setStatus(`Separación ${useGap ? 'activada' : 'desactivada'}. Genera las copias para aplicar.`);
         }
     });
 
-    // ========== IMPRESIÓN CON IFRAME (con separación si está activa) ==========
+    radioNormal.addEventListener('change', () => {
+        paperType = "normal";
+        setStatus(`Tipo de papel: normal. Recuerda configurarlo en la impresora.`);
+        // Si ya hay fotos, solo se actualiza el mensaje
+    });
+    radioFoto.addEventListener('change', () => {
+        paperType = "fotografico";
+        setStatus(`Tipo de papel: fotográfico. Para mejor calidad, selecciona "Papel fotográfico" en la ventana de impresión.`);
+    });
+
+    // ========== IMPRESIÓN CON IFRAME (con separación y tipo de papel) ==========
     function printStrip() {
         const stripDiv = document.getElementById('carnetStrip');
         if (!stripDiv.children.length || stripDiv.children[0].tagName !== 'IMG') {
             setStatus('No hay fotos generadas. Primero haz clic en "Generar 6 copias".', true);
             return;
+        }
+
+        // Mostrar recordatorio según el tipo de papel seleccionado
+        if (paperType === 'fotografico') {
+            alert("💡 RECORDATORIO: Para obtener la mejor calidad en papel fotográfico, en la ventana de impresión que se abrirá, selecciona:\n- Tipo de papel: 'Papel fotográfico'\n- Calidad: 'Alta' o 'Máxima'\n- Asegúrate de que la impresora tenga el papel adecuado.");
+        } else {
+            alert("💡 RECORDATORIO: Para papel normal, en la ventana de impresión puedes elegir 'Papel normal' y calidad estándar.");
         }
 
         const images = stripDiv.querySelectorAll('img');
@@ -517,9 +566,9 @@
             imagesData.push(img.src);
         }
 
-        // Determinar si aplicar gap en impresión
+        // Aplicar clase photo-quality si es papel fotográfico
+        const bodyClass = paperType === 'fotografico' ? 'photo-quality' : '';
         const gapStyle = useGap ? 'margin-right: 2mm;' : 'margin-right: 0;';
-        // Para la última foto, no aplicar margen derecho
         const imagesHtml = imagesData.map((src, idx) => {
             const isLast = idx === imagesData.length - 1;
             const margin = (useGap && !isLast) ? 'margin-right: 2mm;' : '';
@@ -559,6 +608,12 @@
                         border: none;
                         box-shadow: none;
                     }
+                    /* Mejora para papel fotográfico */
+                    .photo-quality {
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                        filter: contrast(1.02) saturate(1.02);
+                    }
                     @media print {
                         body {
                             margin: 1cm 0 0 1cm;
@@ -577,7 +632,7 @@
                     }
                 </style>
             </head>
-            <body>
+            <body class="${bodyClass}">
                 <div class="print-strip">
                     ${imagesHtml}
                 </div>
@@ -598,7 +653,7 @@
             try {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
-                setStatus('Enviado a impresión. Cierra la ventana cuando termines.');
+                setStatus('Enviado a impresión. Sigue las instrucciones del cuadro de diálogo.');
                 setTimeout(() => {
                     iframe.style.visibility = 'hidden';
                 }, 1000);
